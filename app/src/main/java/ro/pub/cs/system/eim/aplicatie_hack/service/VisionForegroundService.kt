@@ -17,11 +17,18 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
+import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.Wearable
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.objects.ObjectDetection
 import com.google.mlkit.vision.objects.ObjectDetector
 import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import ro.pub.cs.system.eim.aplicatie_hack.MainActivity
+import ro.pub.cs.system.eim.aplicatie_hack.audio.TrafficLightAudioPlayer
 import ro.pub.cs.system.eim.aplicatie_hack.model.HapticEvent
 import ro.pub.cs.system.eim.aplicatie_hack.vision.BoundingBoxFilter
 import ro.pub.cs.system.eim.aplicatie_hack.vision.SceneDescriptionManager
@@ -33,83 +40,147 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Serviciu foreground principal al telefonului.
+ * Serviciu foreground principal al telefonului — "ochii" sistemului Guardian.
  *
- * Extinde LifecycleService (implementează LifecycleOwner) pentru CameraX binding.
- * Rulează continuu cât sistemul este activ; gestionează:
- *  - Captura cameră → inferență ML Kit → filtrare bbox → haptic pe ceas
- *  - Frame skipping adaptiv pentru economie baterie
- *  - Stocare ultimului frame pentru SceneDescriptionManager
+ * ## Flux de date principal
+ * ```
+ * Camera (CameraX 640×480 YUV) → analyzeFrame()
+ *   ├─→ ML Kit Object Detection (STREAM_MODE)
+ *   │     ├─→ BoundingBoxFilter → obstacole upper-body → HapticEvent
+ *   │     └─→ TrafficLightDetector (HSV) → TRAFFIC_LIGHT_GREEN / RED
+ *   ├─→ debounce 900ms → WearableMessenger.send() → MessageClient → ceas
+ *   └─→ lastFrame (AtomicReference) → SceneDescriptionManager la cerere
+ * ```
+ *
+ * ## Frame skipping adaptiv
+ * Porneste la `skipEvery=3` (10fps inferență pe 30fps captură). La pericol iminent,
+ * crește la `skipEvery=1` (30fps). La scenă liberă, scade treptat la `skipEvery=6`
+ * (5fps) pentru economie baterie.
+ *
+ * ## Extinde [LifecycleService]
+ * CameraX necesită un [androidx.lifecycle.LifecycleOwner]. [LifecycleService] implementează
+ * această interfață, permițând `bindToLifecycle(this, ...)` direct din serviciu.
+ *
+ * ## Starea de tracking pe ceas
+ * La start și stop, [broadcastTrackingState] publică un DataItem cu `setUrgent()`
+ * pe calea `/tracking/state`. [WatchDataLayerService] primește actualizarea și
+ * actualizează [ro.pub.cs.system.eim.aplicatie_hack.wear.TrackingState],
+ * care activează/dezactivează gesturile din [ro.pub.cs.system.eim.aplicatie_hack.wear.WatchMainActivity].
  */
 class VisionForegroundService : LifecycleService() {
 
     companion object {
+        /**
+         * Acțiunea trimisă ca intent pentru a declanșa o descriere de scenă fără a
+         * reporni serviciul. Handlerat în [onStartCommand].
+         * Surse: buton în [MainActivity], mesaj de la ceas via [PhoneDataLayerService].
+         */
         const val ACTION_DESCRIBE_SCENE = "action.DESCRIBE_SCENE"
+
+        /** SharedPreferences name — aceeași cheie citită și de [PhoneDataLayerService.toggleTracking]. */
         const val PREFS_NAME  = "guardian_prefs"
+
+        /** Cheia booleanului care indică dacă serviciul rulează activ. */
         const val KEY_RUNNING = "service_running"
 
-        private const val NOTIF_ID      = 1001
-        private const val CHANNEL_ID    = "vision_channel"
-        private const val TAG           = "VisionService"
+        private const val NOTIF_ID   = 1001
+        private const val CHANNEL_ID = "vision_channel"
+        private const val TAG        = "VisionService"
 
-        // Ultimul frame capturat — accesat de SceneDescriptionManager la cerere
+        /**
+         * Ultimul frame capturat — [AtomicReference] pentru acces thread-safe.
+         * Scris pe thread-ul cameră (cameraExecutor), citit pe IO din [SceneDescriptionManager].
+         */
         val lastFrame = AtomicReference<Bitmap?>(null)
     }
 
-    private val cameraExecutor    = Executors.newSingleThreadExecutor()
-    private lateinit var detector : ObjectDetector
-    private lateinit var bboxFilter: BoundingBoxFilter
-    private lateinit var tlDetector: TrafficLightDetector
-    private lateinit var messenger : WearableMessenger
-    private lateinit var sceneDesc : SceneDescriptionManager
+    /** Thread dedicat analizei cameră — izolat de main thread pentru a nu bloca UI. */
+    private val cameraExecutor = Executors.newSingleThreadExecutor()
 
-    // Stare adaptivă inferență
+    private lateinit var detector    : ObjectDetector
+    private lateinit var bboxFilter  : BoundingBoxFilter
+    private lateinit var tlDetector  : TrafficLightDetector
+    private lateinit var messenger   : WearableMessenger
+    private lateinit var sceneDesc   : SceneDescriptionManager
+    private lateinit var audioPlayer : TrafficLightAudioPlayer
+
+    // ── Frame skipping adaptiv ────────────────────────────────────────────────
     private var frameCounter = 0
-    private var skipEvery    = 3   // 30fps display → 10fps inferență la start
+    private var skipEvery    = 3   // start: 10fps inferență din 30fps captură
 
-    // Debounce haptic — nu trimitem spam la ceas
+    // ── Debounce haptic (ceas) ────────────────────────────────────────────────
     private var lastEvent     : HapticEvent? = null
     private var lastEventTime = 0L
     private val DEBOUNCE_MS   = 900L
 
+    /**
+     * Debounce separat pentru audio semafor (mai lung decât cel haptic).
+     * Motivul separării: haptic-ul repetit la 900ms e acceptabil pe ceas,
+     * dar audio la 900ms pe difuzorul telefonului ar fi extrem de deranjant.
+     * La 5s: utilizatorul aude o dată "roșu" cât stă la semafor, nu de 30 de ori.
+     */
+    private var lastAudioEvent     : HapticEvent? = null
+    private var lastAudioEventTime = 0L
+    private val AUDIO_DEBOUNCE_MS  = 5_000L
+
     override fun onCreate() {
         super.onCreate()
-        bboxFilter = BoundingBoxFilter()
-        tlDetector = TrafficLightDetector()
-        messenger  = WearableMessenger(this)
-        sceneDesc  = SceneDescriptionManager(this)
+        bboxFilter  = BoundingBoxFilter()
+        tlDetector  = TrafficLightDetector()
+        messenger   = WearableMessenger(this)
+        sceneDesc   = SceneDescriptionManager(this)
+        audioPlayer = TrafficLightAudioPlayer(this)
         initDetector()
     }
 
+    /**
+     * Handlerat două scenarii de start:
+     *  1. Start normal (intent null sau fără acțiune specială): pornește foreground service,
+     *     marchează starea în SharedPreferences, notifică ceasul, inițializează camera.
+     *  2. [ACTION_DESCRIBE_SCENE]: serviciul e deja pornit — doar declanșează descrierea
+     *     scenei fără a reinițializa camera sau a crea notificare nouă.
+     */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
 
         if (intent?.action == ACTION_DESCRIBE_SCENE) {
             lastFrame.get()?.let { sceneDesc.describe(it) }
+                ?: Log.w(TAG, "Describe scene: niciun frame disponibil")
             return START_STICKY
         }
 
         startForeground(NOTIF_ID, buildNotification())
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit().putBoolean(KEY_RUNNING, true).apply()
+        broadcastTrackingState(active = true)
         startCamera()
         return START_STICKY
     }
 
+    /**
+     * Inițializează detectorul ML Kit în modul stream (STREAM_MODE).
+     * STREAM_MODE este optimizat pentru video continuu: reutilizează context-ul
+     * dintre frame-uri pentru a reduce latența per-frame.
+     */
     private fun initDetector() {
         val opts = ObjectDetectorOptions.Builder()
-            .setDetectorMode(ObjectDetectorOptions.STREAM_MODE) // optimizat pentru video continuu
+            .setDetectorMode(ObjectDetectorOptions.STREAM_MODE)
             .enableMultipleObjects()
             .enableClassification()
             .build()
         detector = ObjectDetection.getClient(opts)
     }
 
+    /**
+     * Pornește captura cameră și leagă analiza de lifecycleul acestui serviciu.
+     * Rezoluția 640×480 este optimă: suficient pentru ML Kit, minimă pentru latență.
+     * [ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST]: dacă analiza e lentă, frame-urile
+     * intermediare sunt aruncate (nu se acumulează o coadă care crește latența).
+     */
     private fun startCamera() {
         val future = ProcessCameraProvider.getInstance(this)
         future.addListener({
             val provider = future.get()
-
             val analysis = ImageAnalysis.Builder()
                 .setResolutionSelector(
                     ResolutionSelector.Builder()
@@ -129,11 +200,26 @@ class VisionForegroundService : LifecycleService() {
             runCatching {
                 provider.unbindAll()
                 provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, analysis)
-            }.onFailure { Log.e(TAG, "Camera bind failed: ${it.message}") }
+            }.onFailure { Log.e(TAG, "Camera bind eșuat: ${it.message}") }
 
         }, ContextCompat.getMainExecutor(this))
     }
 
+    /**
+     * Analizează un singur frame și trimite feedback haptic la ceas dacă e necesar.
+     *
+     * Pipeline:
+     * 1. Frame skipping: procesăm 1 din `skipEvery` frame-uri.
+     * 2. ML Kit: detectăm obiectele din frame.
+     * 3. [BoundingBoxFilter]: reținem doar obstacolele la nivel de corp (upper-body).
+     * 4. [TrafficLightDetector]: verificăm culoarea semaforului dacă ML Kit detectează unul.
+     * 5. Debounce: nu trimitem același eveniment mai des de 900ms.
+     * 6. [WearableMessenger.send]: trimitem [HapticEvent] la ceas.
+     * 7. Frame skipping adaptiv: ajustăm `skipEvery` în funcție de urgența detecției.
+     *
+     * @param proxy Frame-ul curent de la CameraX. **Trebuie** închis (proxy.close()) în toate
+     *              căile de execuție pentru a elibera buffer-ul cameră.
+     */
     private fun analyzeFrame(proxy: ImageProxy) {
         frameCounter++
         if (frameCounter % skipEvery != 0) { proxy.close(); return }
@@ -146,13 +232,10 @@ class VisionForegroundService : LifecycleService() {
                 val imgH = proxy.height.toFloat()
                 val imgW = proxy.width.toFloat()
 
-                // Stocăm ultimul frame pentru descriere scenă la cerere
                 runCatching { lastFrame.set(proxy.toBitmap()) }
 
-                // 1. Filtrare obstacole upper-body
                 val threats = bboxFilter.filter(objects, imgH, imgW)
 
-                // 2. Detecție semafor pe obiectele clasificate ca "Traffic light"
                 val trafficEvent = objects
                     .filter { o -> o.labels.any { it.text == "Traffic light" && it.confidence > 0.65f } }
                     .firstNotNullOfOrNull { o ->
@@ -171,18 +254,34 @@ class VisionForegroundService : LifecycleService() {
                     else -> null
                 }
 
-                // Debounce + trimitere la ceas
                 finalEvent?.let { event ->
                     val now = System.currentTimeMillis()
+
+                    // ── Haptic la ceas (debounce 900ms) ──────────────────────
                     if (event != lastEvent || now - lastEventTime > DEBOUNCE_MS) {
                         messenger.send(event)
                         lastEvent     = event
                         lastEventTime = now
-                        // Pericol iminent → creștem rata de inferență temporar
                         skipEvery = if (event == HapticEvent.DANGER_IMMINENT) 1 else 3
                     }
+
+                    // ── Audio semafor pe telefon (debounce 5s) ────────────────
+                    // Debounce mai lung: audio repetat la 900ms ar fi deranjant.
+                    // Se declanșează imediat la schimbarea culorii (RED↔GREEN),
+                    // sau la prima detectare după 5s de la ultimul sunet.
+                    val isTrafficAudio = event == HapticEvent.TRAFFIC_LIGHT_RED ||
+                                         event == HapticEvent.TRAFFIC_LIGHT_GREEN
+                    if (isTrafficAudio &&
+                        (event != lastAudioEvent || now - lastAudioEventTime > AUDIO_DEBOUNCE_MS)) {
+                        when (event) {
+                            HapticEvent.TRAFFIC_LIGHT_RED   -> audioPlayer.playRed()
+                            HapticEvent.TRAFFIC_LIGHT_GREEN -> audioPlayer.playGreen()
+                            else -> Unit
+                        }
+                        lastAudioEvent     = event
+                        lastAudioEventTime = now
+                    }
                 } ?: run {
-                    // Scenă liberă → reducem rata (economie baterie)
                     if (skipEvery < 6) skipEvery++
                 }
             }
@@ -194,13 +293,11 @@ class VisionForegroundService : LifecycleService() {
             NotificationChannel(CHANNEL_ID, "Guardian Vision", NotificationManager.IMPORTANCE_LOW)
                 .also { it.description = "Asistentul vizual este activ" }
         )
-
         val tapIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE
         )
-
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Guardian Vision activ")
             .setContentText("Detectare obstacole în timp real")
@@ -211,11 +308,43 @@ class VisionForegroundService : LifecycleService() {
     }
 
     override fun onDestroy() {
+        broadcastTrackingState(active = false)
         cameraExecutor.shutdown()
         detector.close()
         sceneDesc.shutdown()
+        audioPlayer.release()
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit().putBoolean(KEY_RUNNING, false).apply()
         super.onDestroy()
+    }
+
+    /**
+     * Publică starea de urmărire pe [com.google.android.gms.wearable.DataClient] pentru
+     * a o sincroniza pe ceas, unde [ro.pub.cs.system.eim.aplicatie_hack.wear.service.WatchDataLayerService]
+     * actualizează [ro.pub.cs.system.eim.aplicatie_hack.wear.TrackingState].
+     *
+     * ## De ce DataClient (și nu MessageClient) pentru starea de tracking?
+     * DataClient este **persistent** — dacă ceasul și telefonul sunt deconectate BLE când
+     * serviciul pornește, starea se sincronizează automat la reconectare. MessageClient
+     * s-ar pierde dacă ceasul nu e conectat în acel moment.
+     *
+     * ## De ce setUrgent()?
+     * DataClient implicit folosește sync batched (latență 100–500ms). `setUrgent()` instruiește
+     * Data Layer să trimită prin BLE imediat, reducând latența la ~50ms — comparabil cu
+     * MessageClient, dar cu avantajul persistenței.
+     *
+     * @param active `true` la start, `false` la [onDestroy].
+     */
+    private fun broadcastTrackingState(active: Boolean) {
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                Wearable.getDataClient(this@VisionForegroundService).putDataItem(
+                    PutDataMapRequest.create("/tracking/state").also {
+                        it.dataMap.putBoolean("active", active)
+                        it.dataMap.putLong("ts", System.currentTimeMillis())
+                    }.asPutDataRequest().setUrgent()   // livrare BLE prioritară < 100ms
+                ).await()
+            }.onFailure { Log.w(TAG, "Tracking state broadcast eșuat: ${it.message}") }
+        }
     }
 }

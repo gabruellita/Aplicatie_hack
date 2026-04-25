@@ -58,7 +58,7 @@ class FallDetectionService : Service(), SensorEventListener {
         private const val STILL_AVG_MAX     = 1.5f   // mediu la nivelul gravitației ± mică mișcare
         private const val STILL_STDDEV_MAX  = 0.18f  // mișcări mici = în continuare pe sol
         private const val STILLNESS_WAIT_MS = 2_500L // așteptăm 2.5s după impact
-        private const val CANCEL_WINDOW_MS  = 30_000L
+        private const val CANCEL_WINDOW_MS  = 15_000L
         private const val G = 9.81f
     }
 

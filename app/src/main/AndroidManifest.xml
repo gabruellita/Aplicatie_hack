@@ -67,16 +67,33 @@
             android:name=".service.EmergencyResponseService"
             android:exported="false" />
 
-        <!-- Listener Data Layer: primește evenimentele de cădere de la ceas -->
+        <!-- Listener Data/Message Layer: căderi de la ceas + comenzi remote -->
         <service
             android:name=".service.PhoneDataLayerService"
             android:exported="true"
             tools:ignore="ExportedService">
+            <!-- Fall events persistente de la FallDetectionService -->
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
                 <data
                     android:host="*"
                     android:pathPrefix="/emergency"
+                    android:scheme="wear" />
+            </intent-filter>
+            <!-- Triple-press buton ceas → lansare aplicație telefon -->
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/remote"
+                    android:scheme="wear" />
+            </intent-filter>
+            <!-- Double-tap ceas (tracking activ) → descriere scenă -->
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/command"
                     android:scheme="wear" />
             </intent-filter>
         </service>

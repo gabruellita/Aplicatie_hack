@@ -11,41 +11,106 @@ import kotlinx.coroutines.tasks.await
 import ro.pub.cs.system.eim.aplicatie_hack.model.HapticEvent
 
 /**
- * Trimite comenzi haptic de la telefon la ceas prin Wearable MessageClient.
+ * Trimite comenzi haptic de la telefon la ceas prin Wearable [MessageClient].
  *
- * De ce MessageClient și nu DataClient?
- * MessageClient = fire-and-forget, fără persistență.
- * Dacă ceasul e deconectat 300ms, mesajul vechi e oricum expirat (nu vrem să redăm
- * un pattern de obstacol vechi după reconectare). DataClient persistă și redă la
- * reconectare — greșit pentru feedback haptic în timp real.
- * DataClient rămâne corect pentru fall events (trebuie să nu se piardă niciodată).
+ * ## De ce MessageClient și nu DataClient?
+ * MessageClient = fire-and-forget, fără persistență. Un pattern haptic de obstacol
+ * expirat (detectat acum 2s) nu trebuie redat după o reconectare BLE — ar fi
+ * informație înșelătoare. DataClient persistă și redă la reconectare (greșit pentru
+ * haptic real-time). DataClient rămâne corect **doar** pentru fall events.
+ *
+ * ## Optimizare latență — cache nod
+ * Problema: [NodeClient.getConnectedNodes] face un round-trip BLE la fiecare apel
+ * (~50–200ms). La 10fps inferență cu debounce 900ms, asta adaugă ~100–200ms per mesaj.
+ *
+ * Soluție: cache `nodeId` după prima descoperire. La eșecul trimiterii (nod deconectat),
+ * invalidăm cache-ul și refacem descoperirea o singură dată.
+ *
+ * ```
+ * Prima trimitere : getConnectedNodes() → cache nodeId → sendMessage  [200ms]
+ * Trimiteri ulterioare : sendMessage direct din cache               [<50ms]
+ * La deconectare/reconectare: sendMessage eșuează → cache = null
+ *                              → getConnectedNodes() din nou → sendMessage [200ms]
+ * ```
  */
 class WearableMessenger(private val context: Context) {
 
     companion object {
         const val PATH_HAPTIC = "/haptic"
+        private const val TAG = "WearableMessenger"
     }
 
     private val messageClient = Wearable.getMessageClient(context)
     private val nodeClient    = Wearable.getNodeClient(context)
+
+    /** SupervisorJob: un send eșuat nu anulează celelelte. */
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    /**
+     * ID-ul nodului ceas, descoperit la primul mesaj și reutilizat ulterior.
+     * @Volatile asigură că invalidarea (null) în thread-ul de retry
+     * este vizibilă imediat în alte coroutine.
+     */
+    @Volatile private var cachedNodeId: String? = null
+
+    /**
+     * Trimite un eveniment haptic la ceas.
+     *
+     * Apelat din [ro.pub.cs.system.eim.aplicatie_hack.service.VisionForegroundService]
+     * la fiecare decizie de feedback (obstacol, semafor, etc.) cu debounce de 900ms.
+     *
+     * @param event Tipul de feedback haptic definit în [HapticEvent].
+     */
     fun send(event: HapticEvent) {
         scope.launch {
             runCatching {
-                val watch = nodeClient.connectedNodes.await()
-                    .firstOrNull { it.isNearby }
-                    ?: nodeClient.connectedNodes.await().firstOrNull()
+                val nodeId = cachedNodeId ?: discoverNearbyNode()
+                    ?.also { cachedNodeId = it }
                     ?: return@runCatching
 
-                messageClient.sendMessage(
-                    watch.id,
-                    PATH_HAPTIC,
-                    event.name.toByteArray(Charsets.UTF_8)
-                ).await()
+                // Trimitem cu node-ul din cache
+                val sendResult = runCatching {
+                    messageClient.sendMessage(
+                        nodeId, PATH_HAPTIC, event.name.toByteArray(Charsets.UTF_8)
+                    ).await()
+                }
+
+                if (sendResult.isFailure) {
+                    // Node-ul din cache s-a deconectat — refacem descoperirea o singură dată
+                    Log.d(TAG, "Send eșuat cu nod cacheuit, invalidez și redescopăr")
+                    cachedNodeId = null
+                    val freshNode = discoverNearbyNode()?.also { cachedNodeId = it }
+                        ?: return@runCatching
+
+                    messageClient.sendMessage(
+                        freshNode, PATH_HAPTIC, event.name.toByteArray(Charsets.UTF_8)
+                    ).await()
+                }
+
+                Log.v(TAG, "Haptic trimis: $event → $cachedNodeId")
             }.onFailure {
-                Log.w("WearableMessenger", "Send failed: ${it.message}")
+                Log.w(TAG, "Send failed definitiv: ${it.message}")
             }
         }
+    }
+
+    /**
+     * Interogează Wear OS pentru nodurile conectate și returnează cel mai apropiat.
+     * Fallback la primul nod disponibil dacă niciunul nu e marcat `isNearby`.
+     *
+     * @return Node ID (String) sau null dacă nu există niciun ceas conectat.
+     */
+    private suspend fun discoverNearbyNode(): String? {
+        val nodes = nodeClient.connectedNodes.await()
+        return (nodes.firstOrNull { it.isNearby } ?: nodes.firstOrNull())?.id
+            .also { if (it == null) Log.w(TAG, "Niciun ceas conectat") }
+    }
+
+    /**
+     * Invalidează cache-ul nodului. Apelabil extern dacă se detectează o
+     * deconectare explicită (ex. din [ro.pub.cs.system.eim.aplicatie_hack.service.PhoneDataLayerService]).
+     */
+    fun invalidateNodeCache() {
+        cachedNodeId = null
     }
 }

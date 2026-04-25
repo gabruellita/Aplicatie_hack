@@ -65,16 +65,27 @@
             android:exported="false"
             android:foregroundServiceType="health" />
 
-        <!-- Listener mesaje haptic de la telefon -->
+        <!-- Listener mesaje haptic + stare tracking de la telefon -->
         <service
             android:name="ro.pub.cs.system.eim.aplicatie_hack.wear.service.WatchDataLayerService"
             android:exported="true" >
+
+            <!-- Haptic fire-and-forget de la telefon -->
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
 
                 <data
                     android:host="*"
                     android:pathPrefix="/haptic"
+                    android:scheme="wear" />
+            </intent-filter>
+            <!-- Stare tracking (pornit/oprit) de la VisionForegroundService -->
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+
+                <data
+                    android:host="*"
+                    android:pathPrefix="/tracking"
                     android:scheme="wear" />
             </intent-filter>
         </service>
