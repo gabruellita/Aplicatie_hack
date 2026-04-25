@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- API 34+ necesită tipul de foreground service declarat explicit -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
+    <!-- Cerută de FOREGROUND_SERVICE_TYPE_HEALTH pe API 34+ pentru accesul la senzori -->
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application

@@ -1,8 +1,10 @@
 package ro.pub.cs.system.eim.aplicatie_hack.wear.haptic
 
 import android.content.Context
+import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import ro.pub.cs.system.eim.aplicatie_hack.model.HapticEvent
 
 /**
@@ -16,7 +18,12 @@ import ro.pub.cs.system.eim.aplicatie_hack.model.HapticEvent
  */
 class HapticManager(context: Context) {
 
-    private val vib: Vibrator = context.getSystemService(Vibrator::class.java)!!
+    private val vib: Vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        context.getSystemService(VibratorManager::class.java).defaultVibrator
+    } else {
+        @Suppress("DEPRECATION")
+        context.getSystemService(Vibrator::class.java)!!
+    }
 
     private companion object {
         const val A_SOFT   = 80

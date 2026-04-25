@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:2:1-66:12
-INJECTED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:2:1-66:12
-INJECTED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:2:1-66:12
-INJECTED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:2:1-66:12
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:2:1-68:12
+INJECTED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:2:1-68:12
+INJECTED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:2:1-68:12
+INJECTED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:2:1-68:12
 MERGED from [com.google.android.gms:play-services-wearable:18.2.0] C:\Users\gabri\.gradle\caches\8.13\transforms\28dc4e3ac898f5b5b16ffd8fabab6982\transformed\play-services-wearable-18.2.0\AndroidManifest.xml:2:1-8:12
 MERGED from [com.google.android.gms:play-services-base:18.5.0] C:\Users\gabri\.gradle\caches\8.13\transforms\8b2ff2510fcd8afae6115fdae35dac1b\transformed\play-services-base-18.5.0\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.wear.compose:compose-material-core:1.4.0] C:\Users\gabri\.gradle\caches\8.13\transforms\979e49444a39b833dd537fb95574ff0e\transformed\compose-material-core-1.4.0\AndroidManifest.xml:2:1-7:12
@@ -94,13 +94,17 @@ uses-permission#android.permission.FOREGROUND_SERVICE_HEALTH
 ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:12:5-84
 	android:name
 		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:12:22-81
-uses-permission#android.permission.WAKE_LOCK
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:13:5-68
+uses-permission#android.permission.HIGH_SAMPLING_RATE_SENSORS
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:14:5-85
 	android:name
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:13:22-65
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:14:22-82
+uses-permission#android.permission.WAKE_LOCK
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:15:5-68
+	android:name
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:15:22-65
 application
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:15:5-64:19
-INJECTED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:15:5-64:19
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:17:5-66:19
+INJECTED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:17:5-66:19
 MERGED from [com.google.android.gms:play-services-wearable:18.2.0] C:\Users\gabri\.gradle\caches\8.13\transforms\28dc4e3ac898f5b5b16ffd8fabab6982\transformed\play-services-wearable-18.2.0\AndroidManifest.xml:6:5-20
 MERGED from [com.google.android.gms:play-services-wearable:18.2.0] C:\Users\gabri\.gradle\caches\8.13\transforms\28dc4e3ac898f5b5b16ffd8fabab6982\transformed\play-services-wearable-18.2.0\AndroidManifest.xml:6:5-20
 MERGED from [com.google.android.gms:play-services-base:18.5.0] C:\Users\gabri\.gradle\caches\8.13\transforms\8b2ff2510fcd8afae6115fdae35dac1b\transformed\play-services-base-18.5.0\AndroidManifest.xml:4:5-6:19
@@ -128,79 +132,79 @@ MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\ga
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.17.0] C:\Users\gabri\.gradle\caches\8.13\transforms\c76910c4431aebbc5ab44ac02cf2e113\transformed\core-1.17.0\AndroidManifest.xml:28:18-86
 	android:supportsRtl
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:18:9-35
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:20:9-35
 	android:label
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:17:9-41
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:19:9-41
 	android:allowBackup
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:16:9-35
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:18:9-35
 	android:theme
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:19:9-59
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:21:9-59
 uses-library#com.google.android.wearable
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:21:9-23:39
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:23:9-25:39
 	android:required
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:23:13-36
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:25:13-36
 	android:name
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:22:13-55
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:24:13-55
 activity#ro.pub.cs.system.eim.aplicatie_hack.wear.WatchMainActivity
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:26:9-34:20
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:28:9-36:20
 	android:exported
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:28:13-36
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:30:13-36
 	android:taskAffinity
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:29:13-36
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:31:13-36
 	android:name
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:27:13-46
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:29:13-46
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:30:13-33:29
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:32:13-35:29
 action#android.intent.action.MAIN
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:31:17-69
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:33:17-69
 	android:name
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:31:25-66
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:33:25-66
 category#android.intent.category.LAUNCHER
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:32:17-77
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:34:17-77
 	android:name
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:32:27-74
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:34:27-74
 activity#ro.pub.cs.system.eim.aplicatie_hack.wear.FallAlertActivity
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:37:9-42:43
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:39:9-44:43
 	android:turnScreenOn
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:42:13-40
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:44:13-40
 	android:exported
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:39:13-37
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:41:13-37
 	android:showOnLockScreen
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:40:13-44
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:42:13-44
 	android:taskAffinity
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:41:13-36
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:43:13-36
 	android:name
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:38:13-46
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:40:13-46
 service#ro.pub.cs.system.eim.aplicatie_hack.wear.service.FallDetectionService
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:45:9-48:54
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:47:9-50:54
 	android:exported
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:47:13-37
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:49:13-37
 	android:foregroundServiceType
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:48:13-51
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:50:13-51
 	android:name
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:46:13-57
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:48:13-57
 service#ro.pub.cs.system.eim.aplicatie_hack.wear.service.WatchDataLayerService
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:51:9-62:19
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:53:9-64:19
 	android:exported
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:53:13-36
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:55:13-36
 	tools:ignore
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:54:13-43
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:56:13-43
 	android:name
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:52:13-58
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:54:13-58
 intent-filter#action:name:com.google.android.gms.wearable.MESSAGE_RECEIVED+data:host:*+data:pathPrefix:/haptic+data:scheme:wear
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:55:13-61:29
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:57:13-63:29
 action#com.google.android.gms.wearable.MESSAGE_RECEIVED
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:56:17-91
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:58:17-91
 	android:name
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:56:25-88
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:58:25-88
 data
-ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:57:17-60:45
+ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:59:17-62:45
 	android:host
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:58:21-37
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:60:21-37
 	android:scheme
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:60:21-42
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:62:21-42
 	android:pathPrefix
-		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:59:21-49
+		ADDED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml:61:21-49
 uses-sdk
 INJECTED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from D:\Faculatate\anul_4_sem_1\Aplicatie_hack\wear\src\main\AndroidManifest.xml
